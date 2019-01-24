@@ -46,7 +46,7 @@ from numpy import concatenate, ndarray
 
 Application = SimpleNamespace(
 	Name = "Color Bars",
-	Version = "1.1-D",
+	Version = "1.1",
 	Creator = "Beny Synakiewicz",
 	URL = "www.beny-synakiewicz.com",
 )
