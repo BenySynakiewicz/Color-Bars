@@ -118,7 +118,7 @@ def Main() -> None:
 
 	# Print some (mildly) helpful information.
 
-	print('(The time format used in the progress indication is "HH:MM:SS".)')
+	print('(The time format used in the progress indication is "HH:MM:SS".)' + "\n")
 
 	# Verify the output image parameters.
 
