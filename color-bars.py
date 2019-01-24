@@ -25,6 +25,7 @@
 ##
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+from itertools import chain
 from pathlib import Path
 from string import Template
 from sys import exit
@@ -111,7 +112,7 @@ def Main() -> None:
 	parser.add_argument("-x", dest = "X", type = int, default = Defaults.X, help = "output image width")
 	parser.add_argument("-y", dest = "Y", type = int, default = Defaults.Y, help = "output image height")
 	parser.add_argument("-o", dest = "Output", type = Path, default = Path(), help = "output directory path")
-	parser.add_argument("Input", type = Path, nargs = "+", help = "input video file path")
+	parser.add_argument("Input", type = Path, nargs = "+", help = "input file path")
 
 	arguments = parser.parse_args()
 
@@ -122,8 +123,13 @@ def Main() -> None:
 
 	# Create a list of input files.
 
-	# inputFilePaths = [arguments.Input]
-	inputFilePaths = [path for path in arguments.Input]
+	inputFilePaths = map(lambda path: [path] if ".txt" != path.suffix.lower() else ReadListOfPaths(path), arguments.Input)
+	inputFilePaths = list(set(chain.from_iterable(inputFilePaths)))
+
+	if not inputFilePaths:
+		Error("No input files were given.", critical = True)
+
+	print(f"Found {len(inputFilePaths)} input video file(s)." "\n")
 
 	# Check and, if necessary, create the output directory.
 
@@ -155,7 +161,7 @@ def Main() -> None:
 		# Verify the input file.
 
 		if not path.is_file():
-			Error(Indent + "The given input file DOES NOT EXIST.")
+			Error("The given input file DOES NOT EXIST.")
 			continue
 
 		# Generate and verify the output file paths.
@@ -168,7 +174,7 @@ def Main() -> None:
 		})
 
 		if any(path.exists() for _, path in NamespaceItems(outputPaths)):
-			Error(Indent + "Some (or all) of the output files ALREADY EXIST.")
+			Error("Some (or all) of the output files ALREADY EXIST.")
 			continue
 
 		##
@@ -180,7 +186,7 @@ def Main() -> None:
 		stream = VideoCapture(str(path))
 
 		if not stream.isOpened():
-			Error(Indent + "Failed to open the given input file.")
+			Error("Failed to open the given input file.")
 			continue
 
 		##
@@ -271,15 +277,15 @@ def Main() -> None:
 		print(Indent + "Saving the generated images...")
 
 		if not SaveImage(outputImages.Columns, outputPaths.Columns):
-			Error(Indent + f"Failed to save an output image: {outputPaths.Columns}.")
+			Error(f"Failed to save an output image: {outputPaths.Columns}.")
 			continue
 
 		if not SaveImage(outputImages.ColumnsBlurred, outputPaths.ColumnsBlurred):
-			Error(Indent + f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
+			Error(f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
 			continue
 
 		if not SaveImage(outputImages.SolidColor, outputPaths.SolidColor):
-			Error(Indent + f"Failed to save an output image: {outputPaths.SolidColor}.")
+			Error(f"Failed to save an output image: {outputPaths.SolidColor}.")
 			continue
 
 ##
@@ -315,6 +321,10 @@ def Interpolate(image: ndarray, width: Optional[int] = None, height: Optional[in
 def NamespaceItems(namespace: SimpleNamespace):
 
 	return vars(namespace).items()
+
+def ReadListOfPaths(filePath: Path) -> List[Path]:
+
+	return [Path(path) for path in filePath.read_text().splitlines()]
 
 def SaveImage(image: ndarray, path: Path) -> bool:
 
