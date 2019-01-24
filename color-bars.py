@@ -118,7 +118,7 @@ def Main() -> None:
 	# Verify the output image parameters.
 
 	if arguments.X < 1 or arguments.Y < 1:
-		Error(f"Invalid given output image dimensions: {arguments.X}x{arguments.Y}.")
+		Error(f"Invalid given output image dimensions: {arguments.X}x{arguments.Y}.", critical = True)
 
 	# Create a list of input files.
 
@@ -131,14 +131,14 @@ def Main() -> None:
 
 		if arguments.Output.exists():
 
-			Error("The given output directory ALREADY EXISTS and IS NOT A DIRECTORY.")
+			Error("The given output directory ALREADY EXISTS and IS NOT A DIRECTORY.", critical = True)
 
 		else:
 
 			arguments.Output.mkdir(parents = True)
 
 			if not arguments.Output.is_dir():
-				Error("The given output directory DOES NOT EXIST and CANNOT BE CREATED.")
+				Error("The given output directory DOES NOT EXIST and CANNOT BE CREATED.", critical = True)
 
 	# Print some helpful information.
 
@@ -156,6 +156,7 @@ def Main() -> None:
 
 		if not path.is_file():
 			Error(Indent + "The given input file DOES NOT EXIST.")
+			continue
 
 		# Generate and verify the output file paths.
 
@@ -168,6 +169,7 @@ def Main() -> None:
 
 		if any(path.exists() for _, path in NamespaceItems(outputPaths)):
 			Error(Indent + "Some (or all) of the output files ALREADY EXIST.")
+			continue
 
 		##
 		#
@@ -179,6 +181,7 @@ def Main() -> None:
 
 		if not stream.isOpened():
 			Error(Indent + "Failed to open the given input file.")
+			continue
 
 		##
 		#
@@ -269,12 +272,15 @@ def Main() -> None:
 
 		if not SaveImage(outputImages.Columns, outputPaths.Columns):
 			Error(Indent + f"Failed to save an output image: {outputPaths.Columns}.")
+			continue
 
 		if not SaveImage(outputImages.ColumnsBlurred, outputPaths.ColumnsBlurred):
 			Error(Indent + f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
+			continue
 
 		if not SaveImage(outputImages.SolidColor, outputPaths.SolidColor):
 			Error(Indent + f"Failed to save an output image: {outputPaths.SolidColor}.")
+			continue
 
 ##
 #
@@ -282,9 +288,12 @@ def Main() -> None:
 #
 ##
 
-def Error(description: str) -> None:
+def Error(description: str, critical: bool = False) -> None:
 
-	exit("ERROR: " + description)
+	print("ERROR: " + description)
+
+	if critical:
+		exit(1)
 
 def HumanizeTime(seconds: int) -> str:
 
