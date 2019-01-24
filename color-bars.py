@@ -116,6 +116,10 @@ def Main() -> None:
 
 	arguments = parser.parse_args()
 
+	# Print some (mildly) helpful information.
+
+	print('(The time format used in the progress indication is "HH:MM:SS".)')
+
 	# Verify the output image parameters.
 
 	if arguments.X < 1 or arguments.Y < 1:
@@ -146,10 +150,6 @@ def Main() -> None:
 			if not arguments.Output.is_dir():
 				Error("The given output directory DOES NOT EXIST and CANNOT BE CREATED.", critical = True)
 
-	# Print some helpful information.
-
-	print('(The time format used below is "HH:MM:SS".)')
-
 	# Process the input files.
 
 	for path in inputFilePaths:
@@ -161,7 +161,7 @@ def Main() -> None:
 		# Verify the input file.
 
 		if not path.is_file():
-			Error("The given input file DOES NOT EXIST.")
+			Error("The given input file DOES NOT EXIST.", indent = Indent)
 			continue
 
 		# Generate and verify the output file paths.
@@ -174,7 +174,7 @@ def Main() -> None:
 		})
 
 		if any(path.exists() for _, path in NamespaceItems(outputPaths)):
-			Error("Some (or all) of the output files ALREADY EXIST.")
+			Error("Some (or all) of the output files ALREADY EXIST.", indent = Indent)
 			continue
 
 		##
@@ -186,7 +186,7 @@ def Main() -> None:
 		stream = VideoCapture(str(path))
 
 		if not stream.isOpened():
-			Error("Failed to open the given input file.")
+			Error("Failed to open the given input file.", indent = Indent)
 			continue
 
 		##
@@ -277,15 +277,15 @@ def Main() -> None:
 		print(Indent + "Saving the generated images...")
 
 		if not SaveImage(outputImages.Columns, outputPaths.Columns):
-			Error(f"Failed to save an output image: {outputPaths.Columns}.")
+			Error(f"Failed to save an output image: {outputPaths.Columns}.", indent = Indent)
 			continue
 
 		if not SaveImage(outputImages.ColumnsBlurred, outputPaths.ColumnsBlurred):
-			Error(f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
+			Error(f"Failed to save an output image: {outputPaths.ColumnsBlurred}.", indent = Indent)
 			continue
 
 		if not SaveImage(outputImages.SolidColor, outputPaths.SolidColor):
-			Error(f"Failed to save an output image: {outputPaths.SolidColor}.")
+			Error(f"Failed to save an output image: {outputPaths.SolidColor}.", indent = Indent)
 			continue
 
 ##
@@ -294,9 +294,9 @@ def Main() -> None:
 #
 ##
 
-def Error(description: str, critical: bool = False) -> None:
+def Error(description: str, indent: str = "", critical: bool = False) -> None:
 
-	print("ERROR: " + description)
+	print(indent + "ERROR: " + description)
 
 	if critical:
 		exit(1)
