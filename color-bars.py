@@ -54,6 +54,7 @@ Application = SimpleNamespace(
 
 UpdateInterval = 1.0
 Separator = "  |  "
+Indent = 4 * " "
 
 # The output file.
 
@@ -114,12 +115,16 @@ def Main() -> None:
 
 	arguments = parser.parse_args()
 
-	# Verify the input file.
+	# Verify the output image parameters.
 
-	if not arguments.Input.is_file():
-		Error("The given input file DOES NOT EXIST.")
+	if arguments.X < 1 or arguments.Y < 1:
+		Error(f"Invalid given output image dimensions: {arguments.X}x{arguments.Y}.")
 
-	# Verify the output directory.
+	# Create a list of input files.
+
+	inputFilePaths = [arguments.Input]
+
+	# Check and, if necessary, create the output directory.
 
 	if not arguments.Output.is_dir():
 
@@ -134,130 +139,141 @@ def Main() -> None:
 			if not arguments.Output.is_dir():
 				Error("The given output directory DOES NOT EXIST and CANNOT BE CREATED.")
 
-	# Generate and verify the output file paths.
+	# Print some helpful information.
 
-	outputPathTemplate = arguments.Output / f"{arguments.Input.stem} $postfix.{OutputSuffix}"
+	print('(The time format used below is "HH:MM:SS".)')
 
-	outputPaths = SimpleNamespace(**{
-		key: SubstituteInPath(outputPathTemplate, "postfix", postfix)
-		for (key, postfix) in NamespaceItems(OutputPostfix)
-	})
+	# Process the input files.
 
-	if any(path.exists() for _, path in NamespaceItems(outputPaths)):
-		Error("Some (or all) of the output files ALREADY EXIST.")
+	for path in inputFilePaths:
 
-	# Verify the output image parameters.
+		# Print some information on the file.
 
-	if arguments.X < 1 or arguments.Y < 1:
-		Error(f"Invalid given output image dimensions: {arguments.X}x{arguments.Y}.")
+		print("\n" f"Current file: {path}." "\n")
 
-	##
-	#
-	# Open the input video file.
-	#
-	##
+		# Verify the input file.
 
-	stream = VideoCapture(str(arguments.Input))
+		if not path.is_file():
+			Error(Indent + "The given input file DOES NOT EXIST.")
 
-	if not stream.isOpened():
-		Error("Failed to open the given input file.")
+		# Generate and verify the output file paths.
 
-	##
-	#
-	# Process the video.
-	#
-	##
+		outputPathTemplate = arguments.Output / f"{path.stem} $postfix.{OutputSuffix}"
 
-	print('(The time format used below is "HH:MM:SS".)' "\n")
+		outputPaths = SimpleNamespace(**{
+			key: SubstituteInPath(outputPathTemplate, "postfix", postfix)
+			for (key, postfix) in NamespaceItems(OutputPostfix)
+		})
 
-	frameCount = int(stream.get(CAP_PROP_FRAME_COUNT))
-	frames = SimpleNamespace(
-		Current = 0,
-		Count = frameCount,
-		N = frameCount // arguments.X
-	)
+		if any(path.exists() for _, path in NamespaceItems(outputPaths)):
+			Error(Indent + "Some (or all) of the output files ALREADY EXIST.")
 
-	time = SimpleNamespace(
-		Start = timer(),
-		Latest = 0,
-		Information = 0,
-	)
+		##
+		#
+		# Open the input video file.
+		#
+		##
 
-	columns = []
+		stream = VideoCapture(str(path))
 
-	while stream.isOpened():
+		if not stream.isOpened():
+			Error(Indent + "Failed to open the given input file.")
 
-		time.Latest = timer()
+		##
+		#
+		# Process the video.
+		#
+		##
 
-		# Attempt to grab the next frame (and decide whether to skip it).
+		frameCount = int(stream.get(CAP_PROP_FRAME_COUNT))
+		frames = SimpleNamespace(
+			Current = 0,
+			Count = frameCount,
+			N = frameCount // arguments.X
+		)
 
-		if not stream.grab():
-			break
+		time = SimpleNamespace(
+			Start = timer(),
+			Latest = 0,
+			Information = 0,
+		)
 
-		frames.Current += 1
+		columns = []
 
-		if frames.N and (frames.Current % frames.N):
-			continue
+		while stream.isOpened():
 
-		# Retrieve the frame.
+			time.Latest = timer()
 
-		_, frame = stream.retrieve()
+			# Attempt to grab the next frame (and decide whether to skip it).
 
-		# Display information regarding the progress.
+			if not stream.grab():
+				break
 
-		if (time.Latest - time.Information > UpdateInterval):
+			frames.Current += 1
 
-			progress = frames.Current / frames.Count
-			timePassed = time.Latest - time.Start
-			timeLeft = (timePassed / progress) - timePassed
+			if frames.N and (frames.Current % frames.N):
+				continue
 
-			print(
-				f"{progress:6.1%}"
-				+ Separator + HumanizeTime(timePassed) + " passed"
-				+ Separator + HumanizeTime(timeLeft) + " left"
-			)
+			# Retrieve the frame.
 
-			time.Information = time.Latest
+			_, frame = stream.retrieve()
 
-		# Process the retrieved frame.
+			# Display information regarding the progress.
 
-		columns.append(Interpolate(frame, width = 1))
+			if (time.Latest - time.Information > UpdateInterval):
 
-	# Display the "Finished!" information.
+				progress = frames.Current / frames.Count
+				timePassed = time.Latest - time.Start
+				timeLeft = (timePassed / progress) - timePassed
 
-	print("\n" f"Finished! Processing the video took {HumanizeTime(time.Latest - time.Start)}.")
+				print(
+					Indent
+					+ f"{progress:6.1%}"
+					+ Separator + HumanizeTime(timePassed) + " passed"
+					+ Separator + HumanizeTime(timeLeft) + " left"
+				)
 
-	##
-	#
-	# Generate and save the output images.
-	#
-	##
+				time.Information = time.Latest
 
-	# Generate the output images.
+			# Process the retrieved frame.
 
-	print("\n" "Generating the output images...")
+			columns.append(Interpolate(frame, width = 1))
 
-	baseOutputImage = Interpolate(concatenate(columns, axis = 1), arguments.X, arguments.Y)
-	outputImages = SimpleNamespace(
+		# Display the "Finished!" information.
 
-		Columns = baseOutputImage,
-		ColumnsBlurred = blur(baseOutputImage, (1, BlurHeight)),
-		SolidColor = Interpolate(Interpolate(baseOutputImage, height = 1), height = arguments.Y),
+		print("\n" + Indent + f"Finished! Processing the video took {HumanizeTime(time.Latest - time.Start)}.")
 
-	)
+		##
+		#
+		# Generate and save the output images.
+		#
+		##
 
-	# Save the output images.
+		# Generate the output images.
 
-	print("Saving the generated images...")
+		print("\n" + Indent + "Generating the output images...")
 
-	if not SaveImage(outputImages.Columns, outputPaths.Columns):
-		Error(f"Failed to save an output image: {outputPaths.Columns}.")
+		baseOutputImage = Interpolate(concatenate(columns, axis = 1), arguments.X, arguments.Y)
+		outputImages = SimpleNamespace(
 
-	if not SaveImage(outputImages.ColumnsBlurred, outputPaths.ColumnsBlurred):
-		Error(f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
+			Columns = baseOutputImage,
+			ColumnsBlurred = blur(baseOutputImage, (1, BlurHeight)),
+			SolidColor = Interpolate(Interpolate(baseOutputImage, height = 1), height = arguments.Y),
 
-	if not SaveImage(outputImages.SolidColor, outputPaths.SolidColor):
-		Error(f"Failed to save an output image: {outputPaths.SolidColor}.")
+		)
+
+		# Save the output images.
+
+		print(Indent + "Saving the generated images...")
+
+		if not SaveImage(outputImages.Columns, outputPaths.Columns):
+			Error(Indent + f"Failed to save an output image: {outputPaths.Columns}.")
+
+		if not SaveImage(outputImages.ColumnsBlurred, outputPaths.ColumnsBlurred):
+			Error(Indent + f"Failed to save an output image: {outputPaths.ColumnsBlurred}.")
+
+		if not SaveImage(outputImages.SolidColor, outputPaths.SolidColor):
+			Error(Indent + f"Failed to save an output image: {outputPaths.SolidColor}.")
 
 ##
 #
