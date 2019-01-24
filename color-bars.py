@@ -111,7 +111,7 @@ def Main() -> None:
 	parser.add_argument("-x", dest = "X", type = int, default = Defaults.X, help = "output image width")
 	parser.add_argument("-y", dest = "Y", type = int, default = Defaults.Y, help = "output image height")
 	parser.add_argument("-o", dest = "Output", type = Path, default = Path(), help = "output directory path")
-	parser.add_argument("Input", type = Path, help = "input video file path")
+	parser.add_argument("Input", type = Path, nargs = "+", help = "input video file path")
 
 	arguments = parser.parse_args()
 
@@ -122,7 +122,8 @@ def Main() -> None:
 
 	# Create a list of input files.
 
-	inputFilePaths = [arguments.Input]
+	# inputFilePaths = [arguments.Input]
+	inputFilePaths = [path for path in arguments.Input]
 
 	# Check and, if necessary, create the output directory.
 
