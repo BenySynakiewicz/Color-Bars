@@ -1,4 +1,4 @@
-# Color Bars 1.1
+# Color Bars 1.2
 
 A command-line application for generating the so-called *movie barcodes* of video files. Uses OpenCV for decoding and postprocessing images.
 
