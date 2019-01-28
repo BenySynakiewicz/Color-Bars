@@ -294,21 +294,21 @@ def Main() -> None:
 #
 ##
 
-def Error(description: str, indent: str = "", critical: bool = False) -> None:
+def Error(description, indent = "", critical = False):
 
 	print(indent + "ERROR: " + description)
 
 	if critical:
 		exit(1)
 
-def HumanizeTime(seconds: int) -> str:
+def HumanizeTime(seconds):
 
 	hours, remainder = divmod(seconds, 60 * 60)
 	minutes, seconds = divmod(remainder, 60)
 
 	return f"{hours:02.0f}:{minutes:02.0f}:{seconds:02.0f}"
 
-def Interpolate(image: ndarray, width: Optional[int] = None, height: Optional[int] = None) -> ndarray:
+def Interpolate(image, width = None, height = None):
 
 	originalHeight, originalWidth, _ = image.shape
 
@@ -318,19 +318,19 @@ def Interpolate(image: ndarray, width: Optional[int] = None, height: Optional[in
 		interpolation = InterpolationMethod
 	)
 
-def NamespaceItems(namespace: SimpleNamespace):
+def NamespaceItems(namespace):
 
 	return vars(namespace).items()
 
-def ReadListOfPaths(filePath: Path) -> List[Path]:
+def ReadListOfPaths(filePath):
 
 	return [Path(path) for path in filePath.read_text().splitlines()]
 
-def SaveImage(image: ndarray, path: Path) -> bool:
+def SaveImage(image, path):
 
 	return bool(imwrite(str(path), image, OutputOptions))
 
-def SubstituteInPath(path: Path, identifier: str, value: str) -> Path:
+def SubstituteInPath(path, identifier, value):
 
 	return Path(Template(str(path)).substitute({identifier: value}))
 
